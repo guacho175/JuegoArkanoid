@@ -47,18 +47,18 @@ export default function App() {
 
   useEffect(() => {
     const loadRanking = async () => {
-      const sheetUrl = "https://sheetdb.io/api/v1/6gn8xetirbn1d" || import.meta.env.VITE_SHEETDB_URL;
+      const sheetUrl = "https://script.google.com/macros/s/AKfycbwk6I3OvEN4GL1zjBcDvarlN_LVGrKWHXYbFVIOgXOOC1_Us1gEnT0dHIEiEkZLApuV/exec";
       setIsLoadingRanking(true);
       if (sheetUrl) {
         try {
-          const res = await fetch(sheetUrl, { cache: 'no-store' });
+          const res = await fetch(`${sheetUrl}?juego=arkanoid`, { cache: 'no-store' });
           if (res.ok) {
             const data: any[] = await res.json();
             const parsed: ScoreEntry[] = data.map(row => ({
-              name: String(row.name || 'ANON'),
-              score: parseInt(row.score, 10) || 0,
-              difficulty: String(row.difficulty || ''),
-              date: String(row.date || '')
+              name: String(row.nombre || 'ANON'),
+              score: parseInt(row.puntos, 10) || 0,
+              difficulty: '',
+              date: String(row.fecha || '')
             }));
             const sorted = parsed.sort((a, b) => b.score - a.score).slice(0, 10);
             setRanking(sorted);
@@ -66,7 +66,7 @@ export default function App() {
             return;
           }
         } catch (error) {
-          console.error("Fallo conectando a SheetDB", error);
+          console.error("Fallo conectando a Apps Script", error);
         }
       }
       const saved = JSON.parse(localStorage.getItem('arkanoid_neon_ranking') || '[]');
