@@ -37,6 +37,11 @@ export default function App() {
     status: 'menu'
   });
 
+  const gameStateRef = useRef(gameState);
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
+
   const [ranking, setRanking] = useState<ScoreEntry[]>([]);
   const [isLoadingRanking, setIsLoadingRanking] = useState(false);
 
@@ -176,7 +181,7 @@ export default function App() {
 
   // Collision Logic
   const update = () => {
-    if (gameState.status !== 'playing') return;
+    if (gameStateRef.current.status !== 'playing') return;
 
     const ball = ballRef.current;
     const paddle = paddleRef.current;
@@ -253,7 +258,10 @@ export default function App() {
     }
 
     if (allDestroyed && blocks.length > 0) {
-      setGameState(prev => ({ ...prev, level: prev.level + 1, status: 'victory' }));
+      setGameState(prev => {
+        if (prev.status === 'victory') return prev;
+        return { ...prev, level: prev.level + 1, status: 'victory' };
+      });
     }
 
     // Particles Update
