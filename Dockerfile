@@ -7,9 +7,19 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Serve
-FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-# Configurar nginx para escuchar en el puerto 8080 solicitado
-RUN sed -i 's/listen  80;/listen 8080;/g' /etc/nginx/conf.d/default.conf
-EXPOSE 8080
-CMD ["nginx", "-g", "daemon off;"]
+FROM node:20-slim
+WORKDIR /app
+
+# Copiar solo lo necesario para producciÃ³n
+COPY package*.json ./
+RUN npm install --omit=dev
+
+COPY --from=build /app/dist ./dist
+COPY server.js ./
+
+# Escuchar en el puerto provisto por la variable de entorno
+ENV PORT=8080
+EXPOSE $PORT
+
+# El entrypoint coincide con nuestro archivo principal de inicio
+CMD ["node", "server.js"]

@@ -21,8 +21,8 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
-      - '--port'
-      - '8080'
+      - '--set-env-vars'
+      - 'PORT=8080'
 
 images:
   - 'gcr.io/$PROJECT_ID/arkanoid-neon'
