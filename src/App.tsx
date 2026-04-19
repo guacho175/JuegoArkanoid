@@ -5,8 +5,16 @@
 
 import { motion, AnimatePresence } from 'motion/react';
 import { useEffect, useRef, useState, useCallback, TouchEvent } from 'react';
-import { Trophy, Play, RotateCcw, Volume2, VolumeX, Keyboard, MousePointer2 } from 'lucide-react';
+import { Trophy, Play, RotateCcw, Volume2, VolumeX, Keyboard, MousePointer2, ListOrdered, Heart, Terminal } from 'lucide-react';
 import { Ball, Paddle, Block, GameState, Particle } from './types.ts';
+import NeonMusicPlayer from './components/NeonMusicPlayer';
+
+interface ScoreEntry {
+  name: string;
+  score: number;
+  difficulty?: string;
+  date: string;
+}
 
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
@@ -28,6 +36,42 @@ export default function App() {
     level: 1,
     status: 'menu'
   });
+
+  const [ranking, setRanking] = useState<ScoreEntry[]>([]);
+  const [isLoadingRanking, setIsLoadingRanking] = useState(false);
+
+  useEffect(() => {
+    const loadRanking = async () => {
+      const sheetUrl = "https://sheetdb.io/api/v1/6gn8xetirbn1d" || import.meta.env.VITE_SHEETDB_URL;
+      setIsLoadingRanking(true);
+      if (sheetUrl) {
+        try {
+          const res = await fetch(sheetUrl, { cache: 'no-store' });
+          if (res.ok) {
+            const data: any[] = await res.json();
+            const parsed: ScoreEntry[] = data.map(row => ({
+              name: String(row.name || 'ANON'),
+              score: parseInt(row.score, 10) || 0,
+              difficulty: String(row.difficulty || ''),
+              date: String(row.date || '')
+            }));
+            const sorted = parsed.sort((a, b) => b.score - a.score).slice(0, 10);
+            setRanking(sorted);
+            setIsLoadingRanking(false);
+            return;
+          }
+        } catch (error) {
+          console.error("Fallo conectando a SheetDB", error);
+        }
+      }
+      const saved = JSON.parse(localStorage.getItem('arkanoid_neon_ranking') || '[]');
+      setRanking(saved);
+      setIsLoadingRanking(false);
+    };
+    loadRanking();
+    window.addEventListener('rankingUpdated', loadRanking);
+    return () => window.removeEventListener('rankingUpdated', loadRanking);
+  }, []);
 
   const [muted, setMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -309,142 +353,211 @@ export default function App() {
   };
 
   return (
-    <div className="relative w-full h-screen flex flex-col items-center justify-center p-4 bg-[#050507]">
-      <audio 
-        ref={audioRef} 
-        loop 
-        src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" 
-      />
-
-      {/* Header / HUD */}
-      <div className="w-full max-w-[800px] flex justify-between items-end mb-4 px-2">
-        <div className="flex flex-col">
-          <h1 className="text-4xl font-bold neon-text-cyan tracking-tighter">ARKANOID <span className="text-magenta-400">NEÓN</span></h1>
-          <div className="flex gap-4 text-xs font-mono opacity-60">
-            <span>LEVEL: {gameState.level.toString().padStart(2, '0')}</span>
-            <span>LIVES: {'★'.repeat(gameState.lives)}</span>
-          </div>
-        </div>
-        
-        <div className="flex flex-col items-end">
-          <div className="flex items-center gap-2 text-magenta-400 font-mono text-sm leading-none mb-1">
-            <Trophy size={14} />
-            <span>BEST: {gameState.highScore.toLocaleString()}</span>
-          </div>
-          <div className="text-3xl font-bold font-mono text-white leading-none">
-            {gameState.score.toLocaleString()}
-          </div>
-        </div>
+    <div className="h-screen w-screen overflow-hidden bg-[#0c0c0e] flex flex-col font-sans selection:bg-cyan-500/30 relative">
+      {/* Background Decor */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-20">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/20 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-magenta-500/20 rounded-full blur-[120px]" />
       </div>
 
-      {/* Game Stage */}
-      <div className="relative group neon-border-cyan rounded-lg overflow-hidden glass">
-        <canvas
-          ref={canvasRef}
-          width={CANVAS_WIDTH}
-          height={CANVAS_HEIGHT}
-          onTouchMove={handleTouchMove}
-          className="max-w-full h-auto cursor-none touch-none"
-        />
+      {/* Header */}
+      <motion.header
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="w-full pt-1.5 sm:pt-3 pb-1 px-4 flex flex-col items-center z-50 bg-[#0c0c0e]/95 backdrop-blur-md border-b border-slate-900 flex-shrink-0"
+      >
+        <div className="flex items-baseline gap-2 sm:gap-3">
+          <h1 className="text-lg sm:text-2xl font-black italic text-slate-100 tracking-tighter uppercase relative">
+            Arkanoid
+            <span className="text-cyan-400 mx-1">Neón</span>
+            <span className="absolute -top-1 -right-4 sm:-top-1.5 sm:-right-5 text-[6px] sm:text-[8px] font-mono text-magenta-500 font-bold bg-magenta-500/10 px-0.5 py-0.2 rounded border border-magenta-500/20">V1.1</span>
+          </h1>
+        </div>
+        <p className="text-slate-500 font-mono tracking-[0.3em] text-[6px] sm:text-[8px] uppercase text-center leading-none">
+          Hecho por <span className="text-cyan-400 font-bold">Galindez</span>
+        </p>
+      </motion.header>
 
-        {/* Menu Overlay */}
-        <AnimatePresence>
-          {gameState.status === 'menu' && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm z-10"
-            >
-              <motion.h2 
-                initial={{ y: 20 }}
-                animate={{ y: 0 }}
-                className="text-6xl font-bold mb-8 neon-text-cyan text-center"
-              >
-                START ENGINE
-              </motion.h2>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={startGame}
-                className="group relative px-8 py-4 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold text-xl rounded-full overflow-hidden transition-all hover:bg-cyan-400 hover:text-black shadow-[0_0_20px_rgba(34,211,238,0.3)]"
-              >
-                <div className="flex items-center gap-3">
-                  <Play className="fill-current" />
-                  EJECUTAR PROGRAMA
-                </div>
-              </motion.button>
-              
-              <div className="mt-12 flex gap-8 text-neutral-500 font-mono text-sm">
-                <div className="flex items-center gap-2 text-cyan-400/60">
-                  <Keyboard size={16} />
-                  <span>A/D · ARROWS</span>
-                </div>
-                <div className="flex items-center gap-2 text-magenta-400/60">
-                  <MousePointer2 size={16} />
-                  <span>TOUCH / SWIPE</span>
-                </div>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col w-full z-10 relative min-h-0">
+        {/* Ranking Sidebar */}
+        <motion.aside
+          initial={{ x: -50, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="w-full lg:absolute lg:left-0 lg:top-0 lg:bottom-0 z-20 lg:w-44 xl:w-52 p-2 sm:p-3 lg:border-r border-t lg:border-t-0 border-slate-800 bg-slate-900/40 backdrop-blur-xl flex flex-col flex-shrink-0"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <ListOrdered className="w-3.5 h-3.5 text-magenta-500" />
+            <h2 className="text-[10px] sm:text-xs font-bold text-slate-100 uppercase tracking-widest italic">Ranking</h2>
+          </div>
+
+          <div className="flex-1 space-y-1.5 overflow-y-auto pr-1 max-h-[90px] lg:max-h-none">
+            {isLoadingRanking ? (
+              <div className="flex flex-col items-center justify-center py-4">
+                <p className="text-[8px] font-mono text-cyan-400 uppercase tracking-widest animate-pulse">Sincronizando...</p>
               </div>
-            </motion.div>
-          )}
+            ) : ranking.length > 0 ? (
+              ranking.map((entry, index) => (
+                <div
+                  key={index}
+                  className="group flex flex-col p-1 bg-slate-800/20 border border-slate-700/30 rounded hover:border-magenta-500/50 transition-all"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                      <span className={`font-mono font-black italic text-[10px] ${index < 3 ? 'text-cyan-400' : 'text-slate-600'}`}>
+                        {index + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-[8px] sm:text-[9px] font-bold text-slate-100 uppercase truncate max-w-[50px] sm:max-w-[70px]">{entry.name}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[9px] sm:text-[10px] font-black text-magenta-500 leading-none">{entry.score}</p>
+                    </div>
+                  </div>
+                  {entry.difficulty && (
+                    <div className="flex justify-start ml-3">
+                      <p className="text-[6px] sm:text-[7px] text-slate-500 uppercase tracking-wider">{entry.difficulty}</p>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-2 border border-dashed border-slate-800 rounded">
+                <p className="text-[7px] font-mono text-slate-600 uppercase">Vacío</p>
+              </div>
+            )}
+          </div>
+        </motion.aside>
 
-          {/* Game Over Overlay */}
-          {gameState.status === 'gameover' && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md z-10"
-            >
-              <h2 className="text-7xl font-bold mb-2 text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.5)]">CONEXIÓN PERDIDA</h2>
-              <p className="text-xl font-mono text-neutral-400 mb-12">PLAYER_ELIMINATED: SCORE_{gameState.score}</p>
-              <button
-                onClick={startGame}
-                className="flex items-center gap-3 px-10 py-5 bg-red-500 text-black font-bold text-2xl rounded-sm hover:bg-red-400 transition-colors shadow-none"
-              >
-                <RotateCcw /> REINICIALIZAR
-              </button>
-            </motion.div>
-          )}
+        {/* Game Area */}
+        <main className="flex-1 flex flex-col items-center justify-center w-full h-full p-1 sm:p-2 lg:p-4 overflow-hidden relative bg-[radial-gradient(#1e1e24_1px,transparent_1px)] [background-size:40px_40px]">
+          <div className="w-full max-w-[800px] flex justify-between items-end mb-2 px-2 z-10 glass rounded-xl p-2">
+            <div className="flex flex-col">
+              <span className="text-[8px] uppercase tracking-widest text-white/40 font-mono">Current Logic</span>
+              <div className="flex gap-4 text-xs font-mono font-bold text-cyan-400">
+                <span>LEVEL: {gameState.level.toString().padStart(2, '0')}</span>
+                <span className="text-yellow-400">{'★'.repeat(gameState.lives)}</span>
+              </div>
+            </div>
+            
+            <div className="flex flex-col items-end">
+              <div className="flex items-center gap-2 text-magenta-400 font-mono text-[10px] leading-none mb-1">
+                <Trophy size={10} />
+                <span>BEST: {gameState.highScore.toLocaleString()}</span>
+              </div>
+              <div className="text-lg font-bold font-mono text-cyan-400 leading-none">
+                {gameState.score.toLocaleString()}
+              </div>
+            </div>
+          </div>
 
-          {/* victory Overlay */}
-          {gameState.status === 'victory' && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md z-10"
-            >
-              <h2 className="text-7xl font-bold mb-2 neon-text-cyan">NIVEL COMPLETADO</h2>
-              <p className="text-xl font-mono text-neutral-400 mb-12">ACCESO CONCEDIDO: SECTOR_{gameState.level}</p>
-              <button
-                onClick={restartLevel}
-                className="flex items-center gap-3 px-10 py-5 bg-cyan-400 text-black font-bold text-2xl rounded-sm hover:bg-cyan-300 transition-colors"
-              >
-                <Play className="fill-current" /> SIGUIENTE FASE
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          <div className="relative group neon-border-cyan rounded-lg overflow-hidden glass z-10">
+            <canvas
+              ref={canvasRef}
+              width={CANVAS_WIDTH}
+              height={CANVAS_HEIGHT}
+              onTouchMove={handleTouchMove}
+              className="max-w-full h-auto cursor-none touch-none"
+            />
+
+            {/* Menu Overlay */}
+            <AnimatePresence>
+              {gameState.status === 'menu' && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm z-10"
+                >
+                  <motion.h2 
+                    initial={{ y: 20 }}
+                    animate={{ y: 0 }}
+                    className="text-6xl font-bold mb-8 text-cyan-400 text-center"
+                    style={{ textShadow: '0 0 10px rgba(34,211,238,0.5)' }}
+                  >
+                    START ENGINE
+                  </motion.h2>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={startGame}
+                    className="group relative px-8 py-4 bg-transparent border-2 border-cyan-400 text-cyan-400 font-bold text-xl rounded-full overflow-hidden transition-all hover:bg-cyan-400 hover:text-black shadow-[0_0_20px_rgba(34,211,238,0.3)]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Play className="fill-current" />
+                      EJECUTAR PROGRAMA
+                    </div>
+                  </motion.button>
+                  
+                  <div className="mt-12 flex gap-8 text-neutral-500 font-mono text-sm">
+                    <div className="flex items-center gap-2 text-cyan-400/60">
+                      <Keyboard size={16} />
+                      <span>A/D · ARROWS</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-magenta-400/60">
+                      <MousePointer2 size={16} />
+                      <span>TOUCH / SWIPE</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Game Over Overlay */}
+              {gameState.status === 'gameover' && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md z-10"
+                >
+                  <h2 className="text-7xl font-bold mb-2 text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.5)]">CONEXIÓN PERDIDA</h2>
+                  <p className="text-xl font-mono text-neutral-400 mb-12">PLAYER_ELIMINATED: SCORE_{gameState.score}</p>
+                  <button
+                    onClick={startGame}
+                    className="flex items-center gap-3 px-10 py-5 bg-red-500 text-black font-bold text-2xl rounded-sm hover:bg-red-400 transition-colors shadow-none"
+                  >
+                    <RotateCcw /> REINICIALIZAR
+                  </button>
+                </motion.div>
+              )}
+
+              {/* victory Overlay */}
+              {gameState.status === 'victory' && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md z-10"
+                >
+                  <h2 className="text-7xl font-bold mb-2 text-cyan-400" style={{ textShadow: '0 0 10px rgba(34,211,238,0.5)' }}>NIVEL COMPLETADO</h2>
+                  <p className="text-xl font-mono text-neutral-400 mb-12">ACCESO CONCEDIDO: SECTOR_{gameState.level}</p>
+                  <button
+                    onClick={restartLevel}
+                    className="flex items-center gap-3 px-10 py-5 bg-cyan-400 text-black font-bold text-2xl rounded-sm hover:bg-cyan-300 transition-colors"
+                  >
+                    <Play className="fill-current" /> SIGUIENTE FASE
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </main>
       </div>
 
-      {/* Footer / Controls */}
-      <div className="w-full max-w-[800px] mt-6 flex justify-between items-center text-neutral-500 font-mono text-[10px] uppercase tracking-widest">
-        <div>ARKANOID_SYSTEM // v1.0.4 // © 2026</div>
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => setMuted(!muted)}
-            className="hover:text-white transition-colors p-2 glass rounded-full"
-          >
-            {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-          </button>
-          <span>ENGINE_STATUS: {gameState.status.toUpperCase()}</span>
-        </div>
+      {/* Desktop & Mobile Music Player */}
+      <div className="w-full flex-shrink-0 bg-[#0c0c0e]/95 backdrop-blur-md border-t border-slate-900 z-50 sm:fixed sm:bottom-4 sm:right-4 sm:w-72 lg:w-80 sm:bg-transparent sm:backdrop-blur-none sm:border-none sm:flex-shrink">
+        <motion.div
+           initial={{ opacity: 0, y: 20 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={{ delay: 0.4 }}
+           className="max-w-md mx-auto sm:max-w-none"
+        >
+          <NeonMusicPlayer playLoseTrack={gameState.status === 'gameover'} isGameStarted={gameState.status === 'playing'} />
+        </motion.div>
       </div>
 
-      {/* Background Decorative Elements */}
-      <div className="fixed top-0 left-0 w-full h-full -z-10 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-cyan-500/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-magenta-500/5 blur-[120px] rounded-full" />
-      </div>
+      {/* Noise Texture */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat" />
     </div>
   );
 }
