@@ -5,7 +5,7 @@
 
 import { motion, AnimatePresence } from 'motion/react';
 import { useEffect, useRef, useState, useCallback, TouchEvent } from 'react';
-import { Trophy, Play, RotateCcw, Volume2, VolumeX, Keyboard, MousePointer2, ListOrdered, Heart, Terminal } from 'lucide-react';
+import { Trophy, Play, RotateCcw, Volume2, VolumeX, Keyboard, MousePointer2, ListOrdered, Heart, Terminal, Save, User } from 'lucide-react';
 import { Ball, Paddle, Block, GameState, Particle } from './types.ts';
 import NeonMusicPlayer from './components/NeonMusicPlayer';
 
@@ -44,6 +44,9 @@ export default function App() {
 
   const [ranking, setRanking] = useState<ScoreEntry[]>([]);
   const [isLoadingRanking, setIsLoadingRanking] = useState(false);
+  const [playerName, setPlayerName] = useState('');
+  const [hasSaved, setHasSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const loadRanking = async () => {
@@ -114,7 +117,33 @@ export default function App() {
 
   const startGame = () => {
     initLevel(1);
+    setHasSaved(false);
+    setPlayerName('');
     setGameState(prev => ({ ...prev, score: 0, lives: 3, level: 1, status: 'playing' }));
+  };
+
+  const saveScore = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!playerName.trim() || isSaving) return;
+    setIsSaving(true);
+    const entryData = {
+      juego: 'arkanoid',
+      nombre: String(playerName.trim()).substring(0, 25),
+      puntos: gameState.score
+    };
+    const sheetUrl = "https://script.google.com/macros/s/AKfycbwk6I3OvEN4GL1zjBcDvarlN_LVGrKWHXYbFVIOgXOOC1_Us1gEnT0dHIEiEkZLApuV/exec";
+    try {
+      await fetch(sheetUrl, { method: 'POST', body: JSON.stringify(entryData) });
+    } catch (err) {
+      console.error('Error saving:', err);
+    }
+    const entry = { name: entryData.nombre, score: gameState.score, difficulty: '', date: new Date().toLocaleDateString() };
+    const prev = JSON.parse(localStorage.getItem('arkanoid_neon_ranking') || '[]') as ScoreEntry[];
+    const next = [...prev, entry].sort((a, b) => b.score - a.score).slice(0, 10);
+    localStorage.setItem('arkanoid_neon_ranking', JSON.stringify(next));
+    setHasSaved(true);
+    setIsSaving(false);
+    window.dispatchEvent(new Event('rankingUpdated'));
   };
 
   const restartLevel = () => {
@@ -512,7 +541,6 @@ export default function App() {
                 </motion.div>
               )}
 
-              {/* Game Over Overlay */}
               {gameState.status === 'gameover' && (
                 <motion.div 
                   initial={{ opacity: 0 }}
@@ -520,7 +548,33 @@ export default function App() {
                   className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md z-10"
                 >
                   <h2 className="text-7xl font-bold mb-2 text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.5)]">CONEXIÓN PERDIDA</h2>
-                  <p className="text-xl font-mono text-neutral-400 mb-12">PLAYER_ELIMINATED: SCORE_{gameState.score}</p>
+                  <p className="text-xl font-mono text-neutral-400 mb-6">PLAYER_ELIMINATED: SCORE_{gameState.score}</p>
+                  
+                  <div className="w-full max-w-sm mb-8">
+                    {!hasSaved ? (
+                      <form onSubmit={saveScore} className="space-y-3 text-left">
+                        <p className="text-xs uppercase font-mono text-white/50 pl-1">Nombre para el ranking</p>
+                        <div className="relative">
+                          <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+                          <input type="text" value={playerName}
+                            onChange={e => setPlayerName(e.target.value)}
+                            placeholder="TU NOMBRE"
+                            className="w-full bg-black/50 border border-white/20 focus:border-cyan-400 px-10 py-3 rounded-lg
+                                       text-white placeholder:text-white/30 font-mono uppercase text-sm focus:outline-none transition-colors"
+                            maxLength={10} autoFocus />
+                        </div>
+                        <button type="submit" disabled={!playerName.trim() || isSaving}
+                          className="w-full flex items-center justify-center gap-2 py-3 font-bold uppercase
+                                     tracking-widest rounded-lg text-sm text-black transition-all bg-cyan-400 hover:bg-cyan-300
+                                     disabled:opacity-40 disabled:cursor-not-allowed">
+                          {isSaving ? <span className="animate-pulse">Guardando...</span> : <><Save className="w-4 h-4" /> Guardar Score</>}
+                        </button>
+                      </form>
+                    ) : (
+                      <motion.p initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="font-mono text-sm text-center uppercase text-green-400 py-3">✓ ¡Puntuación guardada!</motion.p>
+                    )}
+                  </div>
+
                   <button
                     onClick={startGame}
                     className="flex items-center gap-3 px-10 py-5 bg-red-500 text-black font-bold text-2xl rounded-sm hover:bg-red-400 transition-colors shadow-none"
