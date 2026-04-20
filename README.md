@@ -1,70 +1,58 @@
-<div align="center">
-  <img width="100%" src="./banner.png" alt="Arkanoid Neón" style="border-radius: 12px; object-fit: cover;" />
-  
-  # 🧱 Arkanoid Neón
-  
-  **Un tributo cyberpunk moderno al clásico juego de romper bloques.**
-  
-  [**🎮 JUEGA AHORA EN VIVO**](https://juegoarkanoid-948774944187.europe-west1.run.app/)
+# Arkanoid Neon
 
-</div>
+Juego en vivo: https://juegoarkanoid-948774944187.europe-west1.run.app/
 
----
+## Descripcion
 
-## 🌟 Descripción
+Arkanoid Neon es una reinterpretacion del clasico rompebloques con interfaz neon responsiva, ranking global y control hibrido para desktop y movil.
 
-**Arkanoid Neón** reinventa el clásico rompeladrillos combinando un diseño de luces **cyberpunk** y *glassmorphism* con físicas precisas. Presenta controles responsivos para teclado, ratón y toques táctiles en móviles, brindando una experiencia rápida y envolvente.
+## Estandar aplicado
 
-El proyecto está diseñado utilizando animaciones suaves y el `<canvas>` nativo de HTML5 para cálculos de rebote y colisiones de forma rápida.
+Este juego se alinea con la referencia de JuegoSerpiente.
 
-## 🚀 Arquitectura del Proyecto
+- Layout comun: header + ranking + canvas + reproductor.
+- Identidad visual unificada con tokens neon compartidos.
+- Mismas reglas de UX tactil y bloqueo de scroll accidental.
 
-El sistema está construido bajo los siguientes pilares tecnológicos y arquitectónicos:
+## Arquitectura comun
 
-- **Framework y UI**: 
-  - Desarrollado como una *Single Page Application (SPA)*.
-  - Basado en **React 19** y empaquetado con **Vite** para una carga ultrarrápida.
-  - Tipado de datos estricto usando **TypeScript**.
-  - Estilizado utilizando **Tailwind CSS V4** (configuración de neones personalizados vía utilidades arbitrarias).
-  
-- **Motor Gráfico y Logica**:
-  - Un bucle de renderizado ajustado con `requestAnimationFrame` que interactúa con la API Canvas en 2D, optimizando la detección de colisiones de manera continua.
-  
-- **Infraestructura y Despliegue Automático (CI/CD)**:
-  - Encontrándose desplegado en Google Cloud Run a través de **Google Cloud Build** (`cloudbuild.yaml`).
-  - Utiliza un `Dockerfile` en configuración multietapa. Compilado con Node y servido configurado para el puerto `8080`.
+- React 19 + TypeScript + Vite
+- Tailwind CSS v4 + motion/react
+- Motor sobre canvas con logica de colisiones en tiempo real
+- Ranking remoto (Apps Script) con respaldo localStorage
+- Dockerfile multistage + cloudbuild.yaml
 
-## 🕹️ Cómo Jugar
+## Controles
 
-1. **Escritorio**: Utiliza las **Flechas del Teclado** (`Izquierda`/`Derecha`), el **Ratón**, o las teclas **A y D** para mover tu plataforma. Presiona el botón principal, espacio o click para lanzar la bola inicial.
-2. **Móviles**: Toca botones o arrastra para mover el paddle rápidamente y asegurar el rebote de la esfera de neón.
-3. Rompe todos los bloques para avanzar ganando puntos sin dejar caer la bola fuera de los límites inferiores.
+- Escritorio: flechas izquierda/derecha, A/D, o raton.
+- Movil: arrastre tactil del paddle.
 
-## ⚙️ Correr en Local (Desarrollo)
+## Desarrollo local
 
-Siga estas instrucciones para preparar y probar el entorno de forma local:
+1. Instalar dependencias:
 
-**Requisitos Previos:** **Node.js** (versión 18+) y Git.
+```bash
+npm install
+```
 
-1. **Clonar e Ingresar al repositorio**:
-   ```bash
-   git clone https://github.com/tu-usuario/JuegoArkanoid.git
-   cd JuegoArkanoid
-   ```
+2. Ejecutar entorno local:
 
-2. **Instalar Dependencias**:
-   ```bash
-   npm install
-   ```
+```bash
+npm run dev
+```
 
-3. **Ejecutar el Servidor de Desarrollo**:
-   ```bash
-   npm run dev
-   ```
+3. Validar tipado:
 
-4. **Visualizar el Proyecto**:
-   Abre la URL proporcionada en tu terminal (usualmente `http://localhost:5173`).
+```bash
+npm run lint
+```
 
-## 📜 Licencia y Créditos
+## Build y despliegue
 
-Proyecto desarrollado por **Galindez & IA**.
+- Build: npm run build
+- Runtime: puerto 8080 en Cloud Run
+- Artefacto: imagen Docker generada por cloudbuild.yaml
+
+## Creditos
+
+Desarrollado por Galindez & IA.

@@ -4,12 +4,22 @@
 @theme {
   --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-magenta-500: #ff00ff;
+  --color-magenta-600: #d000d0;
+  --color-cyan-400: #00ffff;
+  --color-cyan-600: #00cccc;
+  --color-lime-400: #39ff14;
+
   --color-magenta-400: #e879f9;
 }
 
 @layer base {
-  body {
-    @apply bg-[#0a0a0c] text-white selection:bg-cyan-500/30 overflow-hidden;
+  html, body {
+    @apply bg-[#0c0c0e] text-slate-100 antialiased selection:bg-cyan-500/30;
+    overflow: hidden !important;
+    touch-action: none !important;
+    overscroll-behavior: none;
   }
 }
 
@@ -33,4 +43,7 @@
 
 canvas {
   image-rendering: pixelated;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
