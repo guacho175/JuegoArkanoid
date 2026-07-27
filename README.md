@@ -1,58 +1,50 @@
-# Arkanoid Neon
+# Arkanoid Neón 🧱
 
-Juego en vivo: https://juegoarkanoid-948774944187.europe-west1.run.app/
+Bienvenido al repositorio de **Arkanoid Neón**, una reinvención técnica y moderna del clásico juego rompeladrillos, desarrollado en **React**, **TypeScript** y **Vite**. Este proyecto forma parte del universo **Neon Arcade**, destacando por su estética retrowave y su arquitectura orientada al rendimiento.
 
-## Descripcion
+🌐 **Juega ahora en:** [https://arkanoid.orbynexdigital.cl/](https://arkanoid.orbynexdigital.cl/)
 
-Arkanoid Neon es una reinterpretacion del clasico rompebloques con interfaz neon responsiva, ranking global y control hibrido para desktop y movil.
+## 🚀 Arquitectura y Tecnologías
 
-## Estandar aplicado
+El juego está diseñado como una aplicación web de alto rendimiento (SPA), garantizando fluidez en los inputs del usuario (60 FPS) y un renderizado impecable a través de React.
 
-Este juego se alinea con la referencia de JuegoSerpiente.
+- **Frontend:** React 19, TypeScript (para seguridad de tipos estricta y mejor mantenibilidad).
+- **Tooling:** Vite
+- **Estilos:** CSS modular (animaciones fluidas por GPU, variables CSS, y efectos de brillo *glow* dinámicos).
+- **Infraestructura:** Serverless nativo vía Vercel.
 
-- Layout comun: header + ranking + canvas + reproductor.
-- Identidad visual unificada con tokens neon compartidos.
-- Mismas reglas de UX tactil y bloqueo de scroll accidental.
+## 🎮 Caso de Uso y Funcionalidades (Game Design)
 
-## Arquitectura comun
+El caso de uso principal de la aplicación es proveer una experiencia arcade completa tanto en dispositivos de escritorio como en terminales móviles. 
 
-- React 19 + TypeScript + Vite
-- Tailwind CSS v4 + motion/react
-- Motor sobre canvas con logica de colisiones en tiempo real
-- Ranking remoto (Apps Script) con respaldo localStorage
-- Dockerfile multistage + cloudbuild.yaml
+### Funcionalidades Técnicas:
+* **Motor de Físicas:** Cálculo preciso de rebotes angulares, colisiones entre la pelota y los bloques (AABB Collision Detection), y cálculo de trayectoria basado en el punto de impacto de la raqueta (paddle).
+* **Generación de Niveles:** Sistema estructurado para generar patrones de bloques con distintas resistencias y colores.
+* **Responsive Design:** El canvas o zona de juego está programado para escalar dinámicamente y funcionar de manera nativa en navegadores móviles (Mobile-first). Cuenta con soporte táctil para deslizar la raqueta.
+* **Sistema de Puntaje y Ranking:** Persistencia del estado de la partida y un sistema de ranking que guarda las puntuaciones máximas (High Scores), incentivando la rejugabilidad.
 
-## Controles
+## 🛠️ Instalación y Ejecución Local
 
-- Escritorio: flechas izquierda/derecha, A/D, o raton.
-- Movil: arrastre tactil del paddle.
+Si deseas correr este proyecto y modificar el código fuente:
 
-## Desarrollo local
+1. Clona el repositorio:
+   ```bash
+   git clone https://github.com/guacho175/JuegoArkanoid.git
+   cd JuegoArkanoid
+   ```
 
-1. Instalar dependencias:
+2. Instala las dependencias:
+   ```bash
+   npm install
+   ```
 
-```bash
-npm install
-```
+3. Inicia el servidor local:
+   ```bash
+   npm run dev
+   ```
 
-2. Ejecutar entorno local:
+4. Visualiza la aplicación en `http://localhost:5173`.
 
-```bash
-npm run dev
-```
+## 👨‍💻 Autor
 
-3. Validar tipado:
-
-```bash
-npm run lint
-```
-
-## Build y despliegue
-
-- Build: npm run build
-- Runtime: puerto 8080 en Cloud Run
-- Artefacto: imagen Docker generada por cloudbuild.yaml
-
-## Creditos
-
-Desarrollado por Galindez & IA.
+Desarrollado y mantenido por **Galindez** - 2026.
